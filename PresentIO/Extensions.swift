@@ -10,13 +10,13 @@ import Foundation
 
 extension Int {
     func format(f: String) -> String {
-        return NSString(format: "%\(f)d", self) as String
+        return NSString(format: ("%\(f)d" as NSString), self) as String
     }
 }
 
 extension Double {
     func format(f: String) -> String {
-        return NSString(format: "%\(f)f", self) as String
+        return NSString(format: ("%\(f)f" as NSString)) as String
     }
     func to_CGFloat() -> CGFloat {
         return CGFloat(self)
@@ -25,12 +25,13 @@ extension Double {
 
 extension CGFloat {
     func format(f: String) -> String {
-        return Double(self).format(f)
+        return Double(self).format(f:f) as String
     }
 }
 
 extension NSSize {
     init(fromCGSize size:CGSize) {
+        self.init()
         self.width = size.width
         self.height = size.height
     }
