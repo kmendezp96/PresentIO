@@ -42,7 +42,7 @@ class Skin: NSView {
     var trackingArea : NSTrackingArea?
     
     let ResizeHandleSize : CGFloat = 30
-    let appDelegate = NSApplication.sharedApplication().delegate as! AppDelegate
+    let appDelegate = NSApplication.shared.delegate as! AppDelegate
     
     
     override init(frame frameRect: NSRect) {
@@ -65,11 +65,11 @@ class Skin: NSView {
     
     private func loadSkinForDevice() {
         
-        let newDev = DeviceUtils.initWithDimensions(self.device.videDimensions)
+        let newDev = DeviceUtils.initWithDimensions(dimensions: self.device.videDimensions)
         if( self.device.type != newDev.type || self.view == nil ) {
             self.device = newDev
             
-            loadSkinFromNib(self.device.skin)
+            loadSkinFromNib(skin: self.device.skin)
             
             let size = newDev.getWindowSize()
             let frame = NSMakeRect(0, 0, size.width, size.height)
@@ -87,20 +87,20 @@ class Skin: NSView {
             self.view.removeFromSuperview()
         }
         
-        if ( NSBundle.mainBundle().loadNibNamed(skin, owner: self, topLevelObjects: nil)) {
+        if ( Bundle.main.loadNibNamed(skin, owner: self, topLevelObjects: nil)) {
             self.view.frame = self.bounds
             self.addSubview(self.view)
             
             // Custom view set to render concurrently in order to have its own layer
             let previewViewLayer = self.previewView.layer
-            previewViewLayer!.backgroundColor = CGColorGetConstantColor(kCGColorBlack)
+            previewViewLayer!.backgroundColor = CGColor.black
             
             /* ADDING CONNECTION LATER            self.videoPreviewLayer = AVCaptureVideoPreviewLayer(sessionWithNoConnection: self.session) */
             self.videoPreviewLayer = AVCaptureVideoPreviewLayer(session: self.session)
             
             self.videoPreviewLayer!.frame = previewViewLayer!.bounds
-            self.videoPreviewLayer!.autoresizingMask = [CAAutoresizingMask.LayerWidthSizable, CAAutoresizingMask.LayerHeightSizable]
-            self.videoPreviewLayer!.videoGravity = AVLayerVideoGravityResizeAspect
+            self.videoPreviewLayer!.autoresizingMask = [CAAutoresizingMask.layerWidthSizable, CAAutoresizingMask.layerHeightSizable]
+            self.videoPreviewLayer!.videoGravity = AVLayerVideoGravity.resizeAspect
             
             previewViewLayer?.addSublayer(self.videoPreviewLayer!)
             
@@ -113,9 +113,9 @@ class Skin: NSView {
     }
     
     func registerNotifications() {
-        self.notifications.registerObserver(
-            NSWindowDidResizeNotification, forObject: self.window!, dispatchAsyncToMainQueue: true, block: {note in
-                self.updateViewsToWindow(self.window!.frame.size)
+        self.notifications.registerObserver(name: 
+            NSWindow.didResizeNotification.rawValue, forObject: self.window!, dispatchAsyncToMainQueue: true, block: {note in
+                self.updateViewsToWindow(windowSize: self.window!.frame.size)
         })
     }
     
@@ -125,14 +125,14 @@ class Skin: NSView {
         
         // Custom view set to render concurrently in order to have its own layer
         let previewViewLayer = self.previewView.layer
-        previewViewLayer!.backgroundColor = CGColorGetConstantColor(kCGColorWhite)
+        previewViewLayer!.backgroundColor = CGColor.white
         
         /* ADDING CONNECTION LATER        self.videoPreviewLayer = AVCaptureVideoPreviewLayer(sessionWithNoConnection: self.session) */
         self.videoPreviewLayer = AVCaptureVideoPreviewLayer(session: self.session)
         
         self.videoPreviewLayer!.frame = previewViewLayer!.bounds
         //newPreviewLayer.autoresizingMask = CAAutoresizingMask.LayerWidthSizable | CAAutoresizingMask.LayerHeightSizable
-        self.videoPreviewLayer!.videoGravity = AVLayerVideoGravityResize
+        self.videoPreviewLayer!.videoGravity = AVLayerVideoGravity.resize
         previewViewLayer?.addSublayer(self.videoPreviewLayer!)
         
         
@@ -149,16 +149,16 @@ class Skin: NSView {
             self.session.beginConfiguration()
             
             if(input != nil) {
-                session.removeInput(self.input)
+                session.removeInput(self.input!)
                 self.input = nil
             }
             
             if newValue != nil {
                 
                 do {
-                    let newDeviceInput = try AVCaptureDeviceInput(device: newValue)
+                    let newDeviceInput = try AVCaptureDeviceInput(device: newValue as! AVCaptureDevice)
                     
-                    self.session.sessionPreset = AVCaptureSessionPresetHigh
+                    self.session.sessionPreset = AVCaptureSession.Preset.high
                     self.session.addInput(newDeviceInput)
                     self.input = newDeviceInput
                     
@@ -171,16 +171,16 @@ class Skin: NSView {
                     */
                     
                     // Register for notifications in format change which imply orientation change
-                    self.notifications.registerObserver(AVCaptureInputPortFormatDescriptionDidChangeNotification, dispatchAsyncToMainQueue: true, block: {notif in
+                    self.notifications.registerObserver(name: NSNotification.Name.AVCaptureInputPortFormatDescriptionDidChange.rawValue, dispatchAsyncToMainQueue: true, block: {notif in
                         self.updateAspect()
                     })
                     
                     // load existing device settings that might have been previously saved
-                    getDeviceSettings(newValue!)
+                    getDeviceSettings(device: newValue!)
                     
                     
                 } catch let error as NSError {
-                    self.displayError(error)
+                    self.displayError(error: error)
                 }
                 
             }

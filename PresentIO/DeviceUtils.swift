@@ -84,7 +84,7 @@ class DeviceUtils {
     }
     
     func getFrame() -> CGRect {
-        return CGRectMake(0, 0, skinSize.width, skinSize.height)
+        return CGRect(origin: CGPoint(x: 0,y :0), size: CGSize(width: skinSize.width, height: skinSize.height))
     }
     
     func getWindowSize() -> NSSize {
@@ -119,7 +119,7 @@ class DeviceUtils {
             &prop,
             0,
             nil,
-            UInt32(sizeofValue(allow)),
+            UInt32(MemoryLayout.size(ofValue:allow)),
             &allow)
         
     }
