@@ -94,18 +94,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func loadObservers() {
         
-        notifications.registerObserver(AVCaptureSessionRuntimeErrorNotification, forObject: session, dispatchAsyncToMainQueue: true, block: {note in
+        notifications.registerObserver(name: AVCaptureSessionRuntimeErrorNotification.rawValue, forObject: session, dispatchAsyncToMainQueue: true, block: {note in
             let err = note.userInfo![AVCaptureSessionErrorKey] as! NSError
             //self.window.presentError( err )
             NSLog(err.description)
         })
         
         
-        notifications.registerObserver(AVCaptureSessionDidStartRunningNotification, forObject: session, block: {note in
+        notifications.registerObserver(name: nil, forObject: session, dispatchAsyncToMainQueue: AVCaptureSessionDidStartRunningNotification, block: {note in
             print("Did start running")
             self.refreshDevices()
         })
-        notifications.registerObserver(AVCaptureSessionDidStopRunningNotification, forObject: session, block: {note in
+        notifications.registerObserver(nil,AVCaptureSessionDidStopRunningNotification, forObject: session, block: {note in
             print("Did stop running")
         })
 
