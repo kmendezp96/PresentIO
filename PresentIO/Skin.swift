@@ -156,7 +156,7 @@ class Skin: NSView {
             if newValue != nil {
                 
                 do {
-                    let newDeviceInput = try AVCaptureDeviceInput(device: newValue as! AVCaptureDevice)
+                    let newDeviceInput = try AVCaptureDeviceInput(device: (newValue as AVCaptureDevice?)!)
                     
                     self.session.sessionPreset = AVCaptureSession.Preset.high
                     self.session.addInput(newDeviceInput)
@@ -198,9 +198,9 @@ class Skin: NSView {
         
         // let window = self.windowForSheet
         if( window != nil) {
-            if let port = self.input?.ports.first as? AVCaptureInputPort? {
+            if let port = self.input?.ports.first as AVCaptureInput.Port? {
                 
-                if let description = port!.formatDescription {
+                if let description = port.formatDescription {
                     deviceDimensionsObtained = true
                     return CMVideoFormatDescriptionGetDimensions(description)
                 } else {
@@ -214,7 +214,7 @@ class Skin: NSView {
     
     
     func updateAspect() {
-        updateAspect(false)
+        updateAspect(ignoreSettings: false)
     }
     func updateAspect(ignoreSettings:Bool) {
         
@@ -233,11 +233,11 @@ class Skin: NSView {
                     
                     if (    self.deviceSettings != nil
                         &&  !ignoreSettings
-                        &&  self.deviceSettings?.hasPreviousLocation(self.device.orientation) == true ) {
+                        &&  self.deviceSettings?.hasPreviousLocation(forOrientation: self.device.orientation) == true ) {
                             
-                            let windowRect = self.deviceSettings!.savedSettingForOrientation(self.device.orientation)
+                        let windowRect = self.deviceSettings!.savedSettingForOrientation(forOrientation: self.device.orientation)
                             windowSize =  windowRect.size
-                            positionWindow(windowRect)
+                        positionWindow(windowRect: windowRect)
                             
                             
                     } else {
@@ -245,14 +245,14 @@ class Skin: NSView {
                         var screenFrame = self.window!.screen!.visibleFrame
                         screenFrame.size.height -= 50
                         screenFrame.size.width -= 50
-                        windowSize = NSSize(fromCGSize: windowSize).scaleToFit(screenFrame.size)
+                        windowSize = NSSize(fromCGSize: windowSize).scaleToFit(targetSize: screenFrame.size)
                         
                         // Center the window on screen
-                        centerWindow(windowSize)
+                        centerWindow(windowSize: windowSize)
                     }
                     
                     // Resize the internal view to the calculated size / rect
-                    updateViewsToWindow(windowSize)
+                    updateViewsToWindow(windowSize: windowSize)
                     
                 }
             }
@@ -270,13 +270,13 @@ class Skin: NSView {
             saveDeviceSettins()
         }
         
-        updateAspect(true)
+        updateAspect(ignoreSettings: true)
         
     }
     
     func centerWindow(windowSize : NSSize) {
         self.window!.aspectRatio = windowSize
-        self.window!.setFrame(DeviceUtils.getCenteredRect(windowSize, screenFrame: self.window!.screen!.frame), display:true)
+        self.window!.setFrame(DeviceUtils.getCenteredRect(windowSize: windowSize, screenFrame: self.window!.screen!.frame), display:true)
         // self.window?.center() does not work
     }
     func positionWindow(windowRect : NSRect) {
@@ -321,7 +321,7 @@ class Skin: NSView {
             self.removeTrackingArea(trackingArea!)
         }
         trackingArea = NSTrackingArea(rect: self.bounds,
-            options: [NSTrackingAreaOptions.ActiveAlways, .MouseEnteredAndExited], owner: self, userInfo: nil)
+                                      options: [NSTrackingArea.Options.activeAlways, .mouseEnteredAndExited], owner: self, userInfo: nil)
         self.addTrackingArea(trackingArea!)
     }
     
@@ -329,13 +329,14 @@ class Skin: NSView {
     
     func retryOrShutdownSession() {
         // Delay execution of retry logic for 5 seconds.
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, Int64(5 * Double(NSEC_PER_SEC))), dispatch_get_main_queue()) { () -> Void in
+        DispatchQueue.main.asyncAfter(deadline: .now()+5.0)
+         { () -> Void in
             
             if self.deviceDimensionsObtained {  // We were successfull meanwhile in obtaining the video stream
                 return
             }
-            
-            if ++self.deviceInitializationRetries < self.deviceInitializationMaxRetries {
+            let temporalDeviceInitializationRetries = self.deviceInitializationRetries; +1
+            if temporalDeviceInitializationRetries < self.deviceInitializationMaxRetries {
                 if( self.input != nil) {
                     NSLog("Port is empty. Screen may be blank. Reinitializing device")
                     self.session.stopRunning()

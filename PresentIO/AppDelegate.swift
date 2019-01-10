@@ -54,7 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     func loadDeviceSettings() {
-        let loaded = NSKeyedUnarchiver.unarchiveObjectWithFile(Device.ArchivePath) as? [Device]
+        let loaded = NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchivePath) as? [Device]
         if loaded != nil {
             self.deviceSettings = loaded!
         } else {
@@ -101,20 +101,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         })
         
         
-        notifications.registerObserver(name: nil, forObject: session, dispatchAsyncToMainQueue: AVCaptureSessionDidStartRunningNotification, block: {note in
+        notifications.registerObserver(name: NSNotification.Name.AVCaptureSessionDidStartRunning.rawValue, forObject: session,
+        block: {note in
             print("Did start running")
             self.refreshDevices()
         })
-        notifications.registerObserver(nil,AVCaptureSessionDidStopRunningNotification, forObject: session, block: {note in
+        notifications.registerObserver(name: NSNotification.Name.AVCaptureSessionDidStartRunning.rawValue,
+            forObject: session, block: {note in
             print("Did stop running")
         })
 
                 
-        notifications.registerObserver(AVCaptureDeviceWasConnectedNotification, forObject: nil, dispatchAsyncToMainQueue: true, block: {note in
+        notifications.registerObserver(name: NSNotification.Name.AVCaptureSessionDidStartRunning.rawValue, forObject: nil, dispatchAsyncToMainQueue: true, block: {note in
             print("Device connected")
             self.refreshDevices()
         })
-        notifications.registerObserver(AVCaptureDeviceWasDisconnectedNotification, forObject: nil, dispatchAsyncToMainQueue: true, block: {note in
+        notifications.registerObserver(name: NSNotification.Name.AVCaptureSessionDidStartRunning.rawValue, forObject: nil, dispatchAsyncToMainQueue: true, block: {note in
             print("Device disconnected")
             self.refreshDevices()
         })
@@ -126,25 +128,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         
 
         let size = DeviceUtils(deviceType: .iPhone).skinSize
-        let frame = DeviceUtils.getCenteredRect(size, screenFrame: NSScreen.mainScreen()!.frame)
-        
+        let frame = DeviceUtils.getCenteredRect(windowSize: size!, screenFrame: NSScreen.main!.frame)
         let window = NSWindow(contentRect: frame,
-            styleMask: NSBorderlessWindowMask | NSResizableWindowMask,
-            backing: NSBackingStoreType.Buffered, `defer`: false)
+                              styleMask: NSWindow.StyleMask(rawValue:  NSWindow.StyleMask.borderless.rawValue | NSWindow.StyleMask.resizable.rawValue),
+                              backing: NSWindow.BackingStoreType.buffered, defer: false)
         
-        window.movableByWindowBackground = true
-        let frameView = NSMakeRect(0, 0,size.width, size.height)
+        window.isMovableByWindowBackground = true
+        let frameView = NSMakeRect(0, 0,size!.width, (size?.height)!)
         
         let skin = Skin(frame: frameView)
-        skin.initWithDevice(device)
+        skin.initWithDevice(device: device)
         skin.ownerWindow = window
         window.contentView!.addSubview(skin)
         
         skin.registerNotifications()
         skin.updateAspect()
         
-        window.backgroundColor = NSColor.clearColor()
-        window.opaque = false
+        window.backgroundColor = NSColor.clear
+        window.isOpaque = false
         
         window.makeKeyAndOrderFront(NSApp)
 
@@ -153,8 +154,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func refreshDevices() {
         
-        self.devices = AVCaptureDevice.devicesWithMediaType(AVMediaTypeMuxed)
-            +  AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo) as! [AVCaptureDevice]
+        self.devices = AVCaptureDevice.devices(for: AVMediaType.muxed)
+            +  AVCaptureDevice.devices(for: AVMediaType.video)
         
         // A running device was disconnected?
         for(device, deviceView) in deviceSessions {
@@ -176,13 +177,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         print("Only one session supported.")
                         let alert = NSAlert()
                         alert.messageText = "Only one device supported"
-                        alert.addButtonWithTitle("OK")
+                        alert.addButton(withTitle: "OK")
                         alert.informativeText = "You can only display one device at a time. Please disconnect your other device."
                         alert.runModal()
 
                         break;
                     } else {
-                        self.deviceSessions[device] = startNewSession(device)
+                        self.deviceSessions[device] = startNewSession(device: device)
                     }
             }
         }
@@ -201,19 +202,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         if(self.selectedDevice != nil) {
             menuDevice.title = selectedDevice!.deviceSettings!.name
-            menuItemDevice.enabled = true
+            menuItemDevice.isEnabled = true
         } else {
             menuDevice.title = "No Device connected"
-            menuItemDevice.enabled = false
+            menuItemDevice.isEnabled = false
         }
     }
 
     
     @IBAction func fitToScreen(sender: AnyObject) {
-        self.selectedDevice?.scaleToFit(true)
+        self.selectedDevice?.scaleToFit(forgetSettings: true)
     }
     
-    func menuNeedsUpdate(menu: NSMenu) {
+    func menuNeedsUpdate(_ menu: NSMenu) {
         updateMenu()
     }
     
